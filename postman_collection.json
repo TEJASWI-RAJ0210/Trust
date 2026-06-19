@@ -1,0 +1,60 @@
+{
+  "info": {
+    "name": "Trust Backend API",
+    "description": "Development API collection for users, proofs, disputes.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Users",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "http://localhost:3000/api/users", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "users"] }
+      }
+    },
+    {
+      "name": "Create User",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\"\n}"},
+        "url": { "raw": "http://localhost:3000/api/users", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "users"] }
+      }
+    },
+    {
+      "name": "Get Proofs",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "http://localhost:3000/api/proofs", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "proofs"] }
+      }
+    },
+    {
+      "name": "Create Proof",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"title\": \"New Proof\",\n  \"description\": \"Test created from Postman\",\n  \"status\": \"active\",\n  \"userId\": \"<PUT_EXISTING_USER_ID>\"\n}"},
+        "url": { "raw": "http://localhost:3000/api/proofs", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "proofs"] }
+      }
+    },
+    {
+      "name": "Get Disputes",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "http://localhost:3000/api/disputes", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "disputes"] }
+      }
+    },
+    {
+      "name": "Create Dispute",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"title\": \"Dispute Test\",\n  \"status\": \"open\",\n  \"userId\": \"<PUT_EXISTING_USER_ID>\",\n  \"partyId\": \"<PUT_EXISTING_PARTY_ID>\"\n}"},
+        "url": { "raw": "http://localhost:3000/api/disputes", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["api", "disputes"] }
+      }
+    }
+  ]
+}
