@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react"
 import { FileCheck, Clock, AlertTriangle, Plus, ArrowRight, Shield, Users, Zap, Settings, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import router from "next/router"
 
 type ProofStatus = "active" | "delivered" | "disputed"
 
@@ -225,7 +226,9 @@ export default function DashboardPage() {
             variant="outline"
             onClick={async () => {
               await fetch('/api/auth/logout', { method: 'POST' })
-              window.location.href = '/auth/login'
+              router.push("/auth/login")
+              router.refresh()
+
             }}
             className="gap-2"
           >

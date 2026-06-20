@@ -2,6 +2,7 @@ import Link from "next/link"
 import { AlertTriangle, Clock, CheckCircle2, ArrowRight, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useMemo, useEffect } from "react"
 
 type DisputeStatus = "pending" | "in-review" | "resolved"
 
