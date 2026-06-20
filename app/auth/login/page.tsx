@@ -1,13 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const justRegistered = searchParams.get("registered") === "true"
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -15,7 +17,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setError("")
+    setError("")           // clear before submit, not during
     setIsSubmitting(true)
 
     try {
@@ -30,6 +32,8 @@ export default function LoginPage() {
         throw new Error(body?.message || "Login failed")
       }
 
+      // Bug 2 fix: refresh server state so cookie is picked up by layouts
+      router.refresh()
       router.push("/dashboard")
     } catch (error) {
       setError((error as Error).message)
@@ -42,6 +46,14 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <div className="w-full max-w-md rounded-lg border border-border bg-card p-8">
         <h1 className="text-2xl font-semibold mb-4">Login</h1>
+
+        {/* Bug 1 fix: show success message if redirected after registration */}
+        {justRegistered && (
+          <p className="text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md px-3 py-2 mb-2">
+            Account created! Please log in.
+          </p>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-muted-foreground">Email</label>
