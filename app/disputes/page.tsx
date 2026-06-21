@@ -1,3 +1,4 @@
+"use client"
 import Link from "next/link"
 import { AlertTriangle, Clock, CheckCircle2, ArrowRight, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
