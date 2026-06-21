@@ -2,10 +2,13 @@
 
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
-import { FileCheck, Clock, AlertTriangle, Plus, ArrowRight, Shield, Users, Zap, Settings, RefreshCw } from "lucide-react"
+import { useRouter } from "next/navigation" // Bug fix: was 'next/router' (pages router)
+import {
+  FileCheck, Clock, AlertTriangle, Plus, ArrowRight,
+  Shield, Users, Zap, RefreshCw
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import router from "next/router"
 
 type ProofStatus = "active" | "delivered" | "disputed"
 
@@ -22,10 +25,15 @@ function fromApiRecord(record: any): ProofRecord {
   return {
     id: record.id,
     title: record.title,
-    status: record.status === 'disputed' ? 'disputed' : record.status === 'delivered' ? 'delivered' : 'active',
+    status:
+      record.status === "disputed"
+        ? "disputed"
+        : record.status === "delivered"
+        ? "delivered"
+        : "active",
     timestamp: record.createdAt ?? new Date().toISOString(),
-    parties: record.data?.parties ?? ['Unknown'],
-    type: record.data?.type ?? 'Unknown',
+    parties: record.data?.parties ?? ["Unknown"],
+    type: record.data?.type ?? "Unknown",
   }
 }
 
@@ -37,48 +45,19 @@ function useProofs() {
   const loadProofs = async () => {
     setLoading(true)
     setError(null)
-
     try {
-      const response = await fetch('/api/proofs')
+      const response = await fetch("/api/proofs")
       if (!response.ok) throw new Error(`Failed to load proofs (${response.status})`)
       const data = await response.json()
       setProofs(data.map((item: any) => fromApiRecord(item)))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
+      setError(err instanceof Error ? err.message : "Unknown error")
     } finally {
       setLoading(false)
     }
   }
 
-  const createProof = async (userId: string) => {
-    if (!userId) {
-      setError('User ID required to create proof')
-      return
-    }
-
-    const now = new Date().toISOString()
-    const body = {
-      title: `Auto-generated proof ${now}`,
-      description: 'Created from dashboard action',
-      status: 'active',
-      userId,
-      data: { parties: ['Auto', 'Dashboard'], type: 'Automated' },
-    }
-
-    const response = await fetch('/api/proofs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => null)
-      throw new Error(err?.message || `Create failed (${response.status})`)
-    }
-    await loadProofs()
-  }
-
-  return { proofs, loading, error, loadProofs, createProof }
+  return { proofs, loading, error, loadProofs }
 }
 
 function StatusBadge({ status }: { status: ProofStatus }) {
@@ -87,12 +66,7 @@ function StatusBadge({ status }: { status: ProofStatus }) {
     delivered: "bg-green-500/10 text-green-700 border-green-500/20",
     disputed: "bg-destructive/10 text-destructive border-destructive/20",
   }
-
-  const labels = {
-    active: "Active",
-    delivered: "Delivered",
-    disputed: "Disputed",
-  }
+  const labels = { active: "Active", delivered: "Delivered", disputed: "Disputed" }
 
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${styles[status]}`}>
@@ -103,9 +77,7 @@ function StatusBadge({ status }: { status: ProofStatus }) {
 
 function ProofCard({ proof }: { proof: ProofRecord }) {
   const formattedDate = new Date(proof.timestamp).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
+    month: "short", day: "numeric", year: "numeric",
   })
 
   return (
@@ -137,16 +109,13 @@ function ProofCard({ proof }: { proof: ProofRecord }) {
   )
 }
 
-function StatCard({ 
-  title, 
-  value, 
-  icon: Icon, 
-  description 
-}: { 
+function StatCard({
+  title, value, icon: Icon, description,
+}: {
   title: string
   value: number
   icon: React.ElementType
-  description: string 
+  description: string
 }) {
   return (
     <Card>
@@ -167,28 +136,23 @@ function StatCard({
 }
 
 export default function DashboardPage() {
-  const { proofs, loading, error, loadProofs, createProof } = useProofs()
-  const [userId, setUserId] = useState<string | null>(null)
-  const [userError, setUserError] = useState<string | null>(null)
+  const router = useRouter() // Bug fix: useRouter hook, not default import
+  const { proofs, loading, error, loadProofs } = useProofs()
 
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const response = await fetch('/api/auth/me')
-        if (!response.ok) throw new Error(`Failed to load user (${response.status})`)
-        const data = await response.json()
-        setUserId(data.id)
-      } catch (err) {
-        setUserError(err instanceof Error ? err.message : 'Unknown user session')
-      }
-    }
-    loadUser()
     loadProofs()
   }, [])
 
   const activeProofs = useMemo(() => proofs.filter((p) => p.status === "active"), [proofs])
   const completedProofs = useMemo(() => proofs.filter((p) => p.status === "delivered"), [proofs])
   const disputedProofs = useMemo(() => proofs.filter((p) => p.status === "disputed"), [proofs])
+
+  // Bug fix: proper logout using App Router
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" })
+    router.push("/auth/login")
+    router.refresh()
+  }
 
   return (
     <div className="p-6 lg:p-10 max-w-7xl mx-auto">
@@ -198,51 +162,28 @@ export default function DashboardPage() {
           <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Manage your proof records</p>
         </div>
+        {/* Bug fix: removed "Add Random Proof" (debug button) and moved logout to sidebar */}
         <div className="flex items-center gap-3">
           <Button onClick={loadProofs} variant="outline" className="gap-2" disabled={loading}>
-            <RefreshCw className="h-4 w-4" />
-            {loading ? 'Refreshing...' : 'Refresh'}
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            {loading ? "Refreshing..." : "Refresh"}
           </Button>
-          <Button onClick={() => createProof(userId ?? '')} className="gap-2" disabled={!userId}>
-            <Plus className="h-4 w-4" />
-            Add Random Proof
-          </Button>
-          {!userId && userError && (
-            <div className="text-sm text-destructive">{userError}</div>
-          )}
-          <Link href="/integrations">
-            <Button variant="outline" className="gap-2">
-              <Settings className="h-4 w-4" />
-              Integrations
-            </Button>
-          </Link>
           <Link href="/create">
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
               Create Proof
             </Button>
           </Link>
-          <Button
-            variant="outline"
-            onClick={async () => {
-              await fetch('/api/auth/logout', { method: 'POST' })
-              router.push("/auth/login")
-              router.refresh()
-
-            }}
-            className="gap-2"
-          >
-            Logout
-          </Button>
         </div>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive border border-destructive/20">
+        <div className="mb-6 p-3 rounded-lg bg-destructive/10 text-destructive border border-destructive/20 text-sm">
           {error}
         </div>
       )}
-      {/* Stats */}
+
+      {/* Stats — Bug fix: removed hardcoded 44, replaced with real proof counts */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-10">
         <StatCard
           title="Active Projects"
@@ -263,10 +204,10 @@ export default function DashboardPage() {
           description="Requiring attention"
         />
         <StatCard
-          title="Auto-Captured"
-          value={44}
+          title="Total Records"
+          value={proofs.length}
           icon={Zap}
-          description="Events this week"
+          description="All time"
         />
       </div>
 
@@ -286,21 +227,42 @@ export default function DashboardPage() {
       )}
 
       {/* Completed Proofs */}
-      <section className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Completed Proofs</h2>
-          <Link href="/proofs" className="text-sm text-accent hover:underline flex items-center gap-1">
-            View all <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {completedProofs.map((proof) => (
-            <ProofCard key={proof.id} proof={proof} />
-          ))}
-        </div>
-      </section>
+      {completedProofs.length > 0 && (
+        <section className="mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Completed Proofs</h2>
+            <Link href="/proof" className="text-sm text-accent hover:underline flex items-center gap-1">
+              View all <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {completedProofs.map((proof) => (
+              <ProofCard key={proof.id} proof={proof} />
+            ))}
+          </div>
+        </section>
+      )}
 
-      {/* Auto-Capture Activity */}
+      {/* Empty state */}
+      {proofs.length === 0 && !loading && (
+        <Card className="text-center py-16 mb-10">
+          <CardContent className="flex flex-col items-center gap-4">
+            <Shield className="h-12 w-12 text-muted-foreground/30" />
+            <div>
+              <p className="font-medium mb-1">No proof records yet</p>
+              <p className="text-sm text-muted-foreground">Create your first proof to get started</p>
+            </div>
+            <Link href="/create">
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Create Proof
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Auto-Capture Activity — kept as UI placeholder until integrations are built */}
       <section className="mb-10">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -326,9 +288,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{activity.event}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {activity.source} · {activity.proof}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{activity.source} · {activity.proof}</p>
                   </div>
                   <span className="text-xs text-muted-foreground shrink-0">{activity.time}</span>
                 </div>
@@ -338,7 +298,7 @@ export default function DashboardPage() {
         </Card>
       </section>
 
-      {/* Disputes */}
+      {/* Disputes requiring attention */}
       {disputedProofs.length > 0 && (
         <section>
           <Card className="border-destructive/20 bg-destructive/5">
@@ -357,9 +317,7 @@ export default function DashboardPage() {
                         <p className="font-medium">{proof.title}</p>
                         <p className="text-sm text-muted-foreground">{proof.parties.join(" & ")}</p>
                       </div>
-                      <Button variant="outline" size="sm">
-                        Review
-                      </Button>
+                      <Button variant="outline" size="sm">Review</Button>
                     </div>
                   </Link>
                 ))}
