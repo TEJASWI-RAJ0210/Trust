@@ -1,10 +1,10 @@
-# TrustLayer
+# TrustLayer 🔐
 
 > **Proof-as-a-Service** — Tamper-evident, time-stamped records for every stage of a digital transaction.
 
 TrustLayer is a web-based platform that automatically generates verifiable proof records during key stages of transactions — freelancing projects, rental agreements, peer-to-peer sales, and more. It bridges the gap between *having an agreement* and *having proof of what actually happened*.
 
-**Status:** 🚧 Partially Functional — Frontend complete, backend integration in progress.
+**Status:** ✅ MVP Backend Complete — Auth, proofs, disputes, and parties fully wired. Frontend integrated with real data.
 
 ---
 
@@ -19,6 +19,7 @@ TrustLayer is a web-based platform that automatically generates verifiable proof
 - [Environment Variables](#environment-variables)
 - [Database](#database)
 - [API Reference](#api-reference)
+- [Security](#security)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 
@@ -62,33 +63,39 @@ User / Platform
 
 ### Step-by-Step Flow
 
-1. **User Access & Integration** — Users access via the web app; platforms integrate via REST APIs.
-2. **Automated Proof Generation** — The system captures: agreement details, file submissions with version tracking, payment references, and user actions (approve / reject / update).
-3. **Structured Proof Creation** — All captured data is converted into time-stamped activity logs and tamper-evident hashed records with a clear chronological timeline.
-4. **Secure Storage & Sharing** — Records are securely stored; users can generate a shareable proof link or export as a verified document.
-5. **Dispute Resolution Support** — Structured proof can be presented to resolve conflicts, reducing reliance on subjective claims.
+1. **User Access** — Register, log in, and access your dashboard.
+2. **Create Proof** — Define your agreement, add parties, upload files and links.
+3. **Structured Proof Creation** — All data is converted into time-stamped, tamper-evident records.
+4. **Secure Storage & Sharing** — Records stored securely; share via link or export.
+5. **Dispute Resolution** — Raise a formal dispute with structured proof if needed.
 
 ---
 
 ## Features
 
-### ✅ Complete (Frontend)
-- User authentication UI (login / signup)
-- Dashboard layout and navigation
-- Agreement creation form with templates
-- File / work submission interface
-- Activity log and timeline view
-- Proof export and shareable link UI
-- Dispute resolution view
+### ✅ Complete
+- User authentication (register, login, logout) with JWT cookie sessions
+- Route protection via Next.js middleware
+- Dashboard with real proof stats and records
+- Full proof lifecycle — create, view, share, dispute
+- Multi-step proof creation wizard (type → details → attachments → integrations → review)
+- Disputes system — raise, track, and respond to disputes
+- Party profiles linked to disputes
+- User profile with real stats, editable fields, and account deletion
+- Identity verification flow (Aadhaar, PAN, DSC, GST, Selfie)
+- Integrations page (Stripe, Notion, Google, GitHub, Figma, Linear, DocuSign)
+- Onboarding walkthrough
+- Shared component library (PageShell, PageHeader, StatCard, StatusBadge, AppSidebar, EmptyState)
+- Dark mode support
 
-### 🚧 In Progress (Backend)
-- Authentication (API routes, session management)
-- Agreement CRUD operations
-- File upload handling and version tracking
+### 🚧 In Progress / Planned
+- Real file upload storage (currently UI only)
+- PDF export of proof records
+- Email notifications on dispute events
+- External timestamp anchoring (RFC 3161)
+- Real KYC integration (UIDAI, DigiLocker)
 - Activity log persistence
-- Proof record hashing and storage
-- Shareable link generation
-- Dispute submission API
+- API integrations (Stripe webhooks, Notion sync)
 
 ---
 
@@ -101,6 +108,7 @@ User / Platform
 | Styling | Tailwind CSS |
 | UI Components | shadcn/ui |
 | Forms | React Hook Form + Zod |
+| Auth | JWT (jsonwebtoken) + bcryptjs + httpOnly cookies |
 | ORM | Prisma |
 | Database | PostgreSQL |
 | Charts | Recharts |
@@ -113,43 +121,73 @@ User / Platform
 
 ```
 trustlayer/
-├── app/                    # Next.js App Router
-│   ├── api/                # API routes (backend)
-│   │   ├── auth/           # Authentication endpoints
-│   │   ├── agreements/     # Agreement CRUD
-│   │   ├── proofs/         # Proof generation & retrieval
-│   │   └── disputes/       # Dispute submission
-│   ├── (dashboard)/        # Protected dashboard pages
-│   └── (auth)/             # Login / Signup pages
-├── components/             # Reusable UI components
-├── lib/                    # Utilities (db client, helpers, hashing)
+├── app/
+│   ├── api/
+│   │   ├── auth/
+│   │   │   ├── login/route.ts
+│   │   │   ├── logout/route.ts
+│   │   │   ├── me/route.ts
+│   │   │   └── register/route.ts
+│   │   ├── disputes/
+│   │   │   ├── [id]/route.ts
+│   │   │   └── route.ts
+│   │   ├── parties/
+│   │   │   ├── [id]/route.ts
+│   │   │   └── route.ts
+│   │   ├── proofs/
+│   │   │   ├── [id]/route.ts
+│   │   │   └── route.ts
+│   │   └── users/
+│   │       └── [id]/route.ts
+│   ├── auth/                  # Login, register pages
+│   ├── create/                # Multi-step proof creation
+│   ├── dashboard/             # Main dashboard
+│   ├── disputes/              # Disputes list, detail, new
+│   ├── integrations/          # Integration management
+│   ├── onboarding/            # First-time user walkthrough
+│   ├── party/[id]/            # Party profile
+│   ├── profile/               # User profile
+│   ├── proof/[id]/            # Proof detail
+│   ├── verification/          # Identity verification
+│   └── layout.tsx
+├── components/
+│   ├── app-sidebar.tsx        # Shared sidebar + mobile header
+│   ├── empty-state.tsx        # EmptyState, ErrorState, LoadingState
+│   ├── page-header.tsx        # Consistent page headers
+│   ├── page-shell.tsx         # Page wrapper with padding/max-width
+│   ├── stat-card.tsx          # Reusable stat card
+│   ├── status-badge.tsx       # Unified status badge for all statuses
+│   ├── theme-provider.tsx
+│   └── ui/                    # shadcn/ui primitives
+├── lib/
+│   ├── api-auth.ts            # Auth helper for API routes
+│   ├── prisma.ts              # Prisma singleton
+│   └── utils.ts
+├── middleware.ts              # Route protection
 ├── prisma/
-│   ├── schema.prisma       # Database schema
-│   └── migrations/         # Migration history
-├── styles/                 # Global styles
-├── public/                 # Static assets
-└── __tests__/              # Test files
+│   ├── schema.prisma
+│   └── migrations/
+└── __tests__/
 ```
 
 ---
 
 ## Environment Variables
 
-Create a `.env.local` file in the root of the project with the following variables:
+Create a `.env.local` file in the root of the project:
 
 ```env
 # Database
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/DATABASE"
 
-# Authentication
-NEXTAUTH_SECRET="your-secret-key"
-NEXTAUTH_URL="http://localhost:3000"
+# Authentication — must be a strong random string
+JWT_SECRET="your-strong-random-secret-min-32-chars"
 
 # App
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
-> ⚠️ Never commit `.env.local` to version control. It is already listed in `.gitignore`.
+> ⚠️ The app will throw at startup if `JWT_SECRET` or `DATABASE_URL` is missing. Never commit `.env.local`.
 
 ---
 
@@ -157,109 +195,142 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
 TrustLayer uses **PostgreSQL** via **Prisma ORM**.
 
-### Migrations
+### Schema Models
 
-The `prisma/migrations/` directory contains two migrations:
+| Model | Key Fields |
+|---|---|
+| `User` | id, email, name, passwordHash, phone, country, role, emailVerified |
+| `Proof` | id, title, description, data (Json), status, userId |
+| `Dispute` | id, title, description, status, userId, partyId |
+| `Party` | id, name |
+
+### Migrations
 
 | Migration | Description |
 |---|---|
-| `20260320104036_init` | Initial schema — users, agreements, proof records |
-| `20260320195231_add_password_hash` | Adds `passwordHash` field to the User model |
-
-To apply migrations to your database:
+| `20260320104036_init` | Initial schema |
+| `20260320195231_add_password_hash` | Adds passwordHash to User |
 
 ```bash
+# Apply migrations
 npx prisma migrate deploy
-```
 
-To explore your database visually:
-
-```bash
-npx prisma studio
-```
-
-To regenerate the Prisma client after schema changes:
-
-```bash
+# After schema changes
+npx prisma migrate dev --name your_change_name
 npx prisma generate
+
+# Explore data
+npx prisma studio
 ```
 
 ---
 
 ## API Reference
 
-> 🚧 Backend is partially implemented. Endpoints listed below are planned or in progress.
+All endpoints except `/api/auth/*` require a valid session cookie set by login.
 
 ### Authentication
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/api/auth/register` | Register a new user |
-| `POST` | `/api/auth/login` | Login and receive session token |
-| `POST` | `/api/auth/logout` | End session |
+| `POST` | `/api/auth/register` | Register — body: `{ email, password, name?, phone?, country?, role? }` |
+| `POST` | `/api/auth/login` | Login — body: `{ email, password }` — sets httpOnly cookie |
+| `POST` | `/api/auth/logout` | Clears session cookie |
+| `GET` | `/api/auth/me` | Returns current user from cookie |
 
-### Agreements
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/agreements` | List all agreements for current user |
-| `POST` | `/api/agreements` | Create a new agreement |
-| `GET` | `/api/agreements/:id` | Get a specific agreement |
-| `PATCH` | `/api/agreements/:id` | Update agreement status |
-
-### Proof Records
+### Users
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/proofs/:id` | Retrieve a proof record |
-| `POST` | `/api/proofs/generate` | Generate proof for a transaction event |
-| `GET` | `/api/proofs/:id/export` | Export proof as a verified document |
-| `GET` | `/api/proofs/:id/share` | Get a shareable proof link |
+| `GET` | `/api/users/[id]` | Get own profile (own ID only) |
+| `PATCH` | `/api/users/[id]` | Update name, email, phone, country (own only) |
+| `DELETE` | `/api/users/[id]` | Delete account + all data (own only) |
+
+### Proofs
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/proofs` | List own proofs |
+| `POST` | `/api/proofs` | Create proof — body: `{ title, description?, data? }` |
+| `GET` | `/api/proofs/[id]` | Get proof (owner only) |
+| `PATCH` | `/api/proofs/[id]` | Update title, description, status (owner only) |
+| `DELETE` | `/api/proofs/[id]` | Delete proof (owner only) |
 
 ### Disputes
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/api/disputes` | Submit a dispute with linked proof |
-| `GET` | `/api/disputes/:id` | Get dispute details and timeline |
+| `GET` | `/api/disputes` | List own disputes |
+| `POST` | `/api/disputes` | Create dispute — body: `{ title, partyId, description? }` |
+| `GET` | `/api/disputes/[id]` | Get dispute (owner only) |
+| `PATCH` | `/api/disputes/[id]` | Update title, description, status (owner only) |
+| `DELETE` | `/api/disputes/[id]` | Delete dispute (owner only) |
+
+### Parties
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/parties` | List parties linked to own disputes |
+| `POST` | `/api/parties` | Create party — body: `{ name }` |
+| `GET` | `/api/parties/[id]` | Get party (must have dispute with them) |
+| `DELETE` | `/api/parties/[id]` | Delete party (if no other users reference them) |
+
+---
+
+## Security
+
+- All routes protected by `middleware.ts` — unauthenticated users redirected to login
+- JWT stored in `httpOnly` cookie — not accessible via JavaScript
+- `userId` always read from cookie, never trusted from request body
+- Passwords hashed with bcryptjs (cost factor 10)
+- All API routes return 401/403 before touching the database if auth fails
+- Users can only access their own data — ownership checked on every `[id]` route
+- `passwordHash` never returned in any API response
+- `JWT_SECRET` and `DATABASE_URL` validated at startup — app refuses to run without them
+- Email normalized to lowercase before storage and lookup
 
 ---
 
 ## Roadmap
 
-### MVP (Current Focus)
-- [x] Frontend UI — all screens
-- [ ] Authentication — registration, login, session
-- [ ] Agreement creation and management
-- [ ] Proof record generation with hashing
-- [ ] Activity log persistence
-- [ ] Shareable proof links
-- [ ] Export as verified document
+### MVP ✅
+- [x] Auth — register, login, logout, session
+- [x] Route protection via middleware
+- [x] Proof CRUD with ownership checks
+- [x] Dispute CRUD with party creation
+- [x] Dashboard with real data
+- [x] Profile page with editable fields
+- [x] Shared component library
+- [x] All pages wired to real API
 
 ### Phase 2
-- [ ] Platform API integration (for third-party freelancing sites)
-- [ ] Email notifications on key events
-- [ ] External timestamp anchoring (RFC 3161 or blockchain)
-- [ ] Role-based access (admin, client, freelancer)
+- [ ] File upload storage (S3 or Cloudflare R2)
+- [ ] PDF export of proof records
+- [ ] Email notifications (dispute raised, status changed)
+- [ ] External timestamp anchoring (RFC 3161)
+- [ ] Real KYC integration (UIDAI OTP, DigiLocker)
+- [ ] Webhook support for integrations (Stripe, Notion)
 
-### Future Use Cases
-- 🏠 Rental agreements
-- 🛒 E-commerce transactions
-- 🎓 Academic collaborations
+### Future
+- 🏠 Rental agreements use case
+- 🛒 E-commerce transaction proofs
+- 🎓 Academic collaboration records
 - 🏪 Small business operations
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Here's how to get started:
+1. Fork the repository
+2. Create a branch: `git checkout -b feature/your-feature`
+3. Commit: `git commit -m "feat: description"`
+4. Push: `git push origin feature/your-feature`
+5. Open a Pull Request
 
-1. Fork the repository.
-2. Create a new branch: `git checkout -b feature/your-feature-name`
-3. Make your changes and commit: `git commit -m "feat: add your feature"`
-4. Push to your branch: `git push origin feature/your-feature-name`
-5. Open a Pull Request.
-
-Please follow the existing code style and write clear commit messages. For major changes, open an issue first to discuss what you'd like to change.
+For major changes, open an issue first to discuss.
 
 ---
+
+<div align="center">
+  <p>Built with ❤️ to make digital trust verifiable.</p>
+</div>
