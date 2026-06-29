@@ -1,16 +1,15 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '../../../lib/prisma'
 import { getAuthUserId, unauthorized, serverError } from '../../../lib/api-auth'
+import { logProofEvent } from '../../../lib/proof-events'
 
 export async function GET() {
   try {
     const userId = await getAuthUserId()
     if (!userId) return unauthorized()
 
-    // Bug fix: only return THIS user's proofs, not everyone's
     const proofs = await prisma.proof.findMany({
       where: { userId },
-      // Bug fix: never expose passwordHash — select only safe fields
       select: {
         id: true,
         title: true,
@@ -18,6 +17,8 @@ export async function GET() {
         data: true,
         status: true,
         createdAt: true,
+        latestHash: true,
+        latestTsrAt: true,
         user: { select: { id: true, email: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
@@ -36,22 +37,46 @@ export async function POST(request: Request) {
 
     const body = await request.json()
 
-    // Bug fix: userId always comes from the cookie, never from the body
     if (!body.title) {
       return NextResponse.json({ message: 'title is required' }, { status: 400 })
     }
 
+    // Create the proof first (without hash — we need the ID first)
     const proof = await prisma.proof.create({
       data: {
         title: body.title,
         description: body.description ?? null,
         data: body.data ?? null,
-        status: 'active', // always start active, never trust status from client
+        status: 'active',
         user: { connect: { id: userId } },
       },
     })
 
-    return NextResponse.json(proof, { status: 201 })
+    // Now log the creation event — this computes + stores the hash and TSR
+    await logProofEvent({
+      proofId: proof.id,
+      eventType: 'created',
+      actorId: userId,
+      description: `Proof "${proof.title}" created`,
+    })
+
+    // Return the proof with its hash populated
+    const updated = await prisma.proof.findUnique({
+      where: { id: proof.id },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        data: true,
+        status: true,
+        createdAt: true,
+        latestHash: true,
+        latestTsrAt: true,
+        user: { select: { id: true, email: true, name: true } },
+      },
+    })
+
+    return NextResponse.json(updated, { status: 201 })
   } catch (err) {
     return serverError(err)
   }
